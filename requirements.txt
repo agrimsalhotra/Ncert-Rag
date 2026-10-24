@@ -1,0 +1,39 @@
+# --- Parsing ---
+PyMuPDF>=1.25.0
+pymupdf4llm>=0.0.17
+
+# --- Framework (LangChain 0.3 LCEL, NumPy 2.x & Python 3.13 ready) ---
+langchain>=0.3.27,<0.4.0
+langchain-community>=0.3.27,<0.4.0
+langchain-huggingface>=0.3.1,<0.4.0
+langchain-chroma>=0.2.6,<0.3.0
+
+# --- Embeddings & vector store ---
+sentence-transformers>=3.4.0
+fastembed>=0.5.1
+chromadb>=0.6.0
+
+# --- Sparse retrieval & re-ranking ---
+rank-bm25>=0.2.2
+flashrank>=0.2.9
+
+# --- Data validation & config ---
+pydantic>=2.10.0,<3.0.0
+pydantic-settings>=2.10.1,<3.0.0
+python-dotenv>=1.0.1
+
+# --- Evaluation ---
+ragas>=0.2.12
+datasets>=3.2.0
+
+# --- Utilities ---
+tenacity>=9.0.0
+tqdm>=4.67.0
+pytest>=8.3.0
+
+rapidocr>=2.0.0
+onnxruntime>=1.20.0
+
+langchain-groq>=0.3.0,<0.4.0
+langchain-google-genai>=2.1.0,<3.0.0
+langchain-openai>=0.3.0,<0.4.0
