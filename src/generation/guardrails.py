@@ -1,3 +1,4 @@
+import re
 from typing import List, Tuple
 
 from config.settings import MIN_PASSAGE_SCORE, REFUSAL_SCORE
@@ -15,6 +16,9 @@ CITATION_FAILURE_MESSAGE = (
 )
 SERVICE_ERROR_MESSAGE = (
     "The answer service is temporarily unavailable. Please try again in a moment."
+)
+CITATION_PATTERN = re.compile(
+    r"[\[【]\s*(?:excerpts?|sources?|passages?)?\s*([\d,\s]+)[\]】]", re.IGNORECASE
 )
 
 
@@ -39,10 +43,8 @@ def keep_relevant_passages(results: List[Tuple[ParentChunk, float]]):
 
 def extract_citation_numbers(answer_text: str, max_number: int) -> List[int]:
     """Find valid citation numbers such as [1], [2][3] or [1, 2], without duplicates."""
-    import re
-
     numbers = []
-    for group in re.findall(r"\[([\d,\s]+)\]", answer_text):
+    for group in CITATION_PATTERN.findall(answer_text):
         for piece in group.split(","):
             piece = piece.strip()
             if not piece.isdigit():
