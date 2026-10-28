@@ -3,3 +3,5 @@
 __pycache__/
 data/vectorstore/
 data/models/
+data/chunks/
+data/raw/

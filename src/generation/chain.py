@@ -40,6 +40,7 @@ class RagAnswer(BaseModel):
     reason: str          # "ok", or why the answer was refused
     sources: List[Source]
     raw_answer: str = ""  # what the LLM actually returned (for debugging)
+    retrieved_parents: List[ParentChunk] = []   # passages shown to the LLM (for evaluation)
 
 
 def build_source_label(parent: ParentChunk) -> str:
@@ -69,9 +70,11 @@ class NcertRag:
     def __init__(self):
         self.searcher = NcertSearch()
         llm = build_llm()
-        self.chain = ANSWER_PROMPT | llm | StrOutputParser()   # LCEL pipeline
+        self.chain = ANSWER_PROMPT | llm | StrOutputParser()  # LCEL pipeline
 
-    def _refuse(self, question, message, reason, raw_answer="") -> RagAnswer:
+    def _refuse(
+        self, question, message, reason, raw_answer="", retrieved_parents=None
+    ) -> RagAnswer:
         if raw_answer != "":
             logger.warning("Refused (%s). Raw LLM answer: %r", reason, raw_answer[:500])
         return RagAnswer(
@@ -81,6 +84,7 @@ class NcertRag:
             reason=reason,
             sources=[],
             raw_answer=raw_answer,
+            retrieved_parents=retrieved_parents or [],
         )
 
     def ask(self, question: str, class_num=None) -> RagAnswer:
@@ -91,6 +95,7 @@ class NcertRag:
             return self._refuse(question, REFUSAL_MESSAGE, reason)
 
         passages = keep_relevant_passages(results)
+        retrieved = [parent for parent, score in passages]
         context = build_context(passages)
 
         # Ask the LLM. If the answer has no valid citation, try once more.
@@ -109,12 +114,15 @@ class NcertRag:
             except Exception as error:
                 # Every provider failed (rate limit, network, bad key, ...)
                 reason = f"llm_error: {type(error).__name__}"
-                return self._refuse(question, SERVICE_ERROR_MESSAGE, reason)
+                return self._refuse(
+                    question, SERVICE_ERROR_MESSAGE, reason, retrieved_parents=retrieved
+                )
 
             # Gate 2: the LLM itself says the excerpts are not enough
             if INSUFFICIENT_MARKER in answer_text:
                 return self._refuse(
-                    question, REFUSAL_MESSAGE, "llm_insufficient_context", answer_text
+                    question, REFUSAL_MESSAGE, "llm_insufficient_context",
+                    answer_text, retrieved,
                 )
 
             # Gate 3: the answer must cite at least one real excerpt
@@ -127,9 +135,13 @@ class NcertRag:
 
         if len(cited_numbers) == 0:
             if answer_text == "":
-                return self._refuse(question, SERVICE_ERROR_MESSAGE, "empty_llm_response")
+                return self._refuse(
+                    question, SERVICE_ERROR_MESSAGE, "empty_llm_response",
+                    retrieved_parents=retrieved,
+                )
             return self._refuse(
-                question, CITATION_FAILURE_MESSAGE, "no_valid_citation", answer_text
+                question, CITATION_FAILURE_MESSAGE, "no_valid_citation",
+                answer_text, retrieved,
             )
 
         sources = []
@@ -150,4 +162,5 @@ class NcertRag:
             reason="ok",
             sources=sources,
             raw_answer=answer_text,
+            retrieved_parents=retrieved,
         )
