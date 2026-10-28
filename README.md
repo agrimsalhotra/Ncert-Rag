@@ -15,8 +15,11 @@ BASH SETUP
 ##############
 
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+source .venv/Scripts/activate        # Windows: .venv\Scripts\activate
+
 pip install --upgrade pip
+
 pip install -r requirements.txt
 
 
