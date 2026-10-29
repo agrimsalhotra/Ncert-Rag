@@ -1,7 +1,10 @@
 .venv/
 .env
 __pycache__/
-data/vectorstore/
-data/models/
-data/chunks/
-data/raw/
+
+
+
+data/raw/*
+data/raw1/*
+
+!data/raw/.gitkeep
