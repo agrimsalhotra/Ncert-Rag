@@ -56,8 +56,14 @@ def build_chunks(chapter: ParsedChapter) -> Tuple[List[ParentChunk], List[ChildC
     #full_text = "\n\n".join(page.markdown for page in chapter.pages)
     full_text = "\n\n".join(clean_page_text(page.markdown) for page in chapter.pages)
     # 2. Fix heading levels, then read the chapter title
+    # normalized_text = normalize_headings(full_text)
+    # chapter_name = find_chapter_name(chapter.pages[0].markdown)
     normalized_text = normalize_headings(full_text)
-    chapter_name = find_chapter_name(chapter.pages[0].markdown)
+    chapter_name = find_chapter_name(
+        chapter.pages[0].markdown,
+        class_num=chapter.class_num,
+        chapter_num=chapter.chapter_num,
+    )
 
     # 3. Split into sections along headings (heading text stays inside the section)
     header_splitter = MarkdownHeaderTextSplitter(

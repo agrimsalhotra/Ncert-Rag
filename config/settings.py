@@ -83,13 +83,18 @@ EMBED_BATCH_SIZE = 32
 QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
 
 # --- Retrieval ---
-RERANKER_MODEL_NAME = "ms-marco-MiniLM-L-12-v2"
+# config/settings.py
+RERANKER_MODEL_NAME = "ms-marco-TinyBERT-L-2-v2"  # ~5x faster on CPU than MiniLM-L-12-v2
+BM25_TOP_K = 8                                    # down from 15
+DENSE_TOP_K = 8
+# RERANKER_MODEL_NAME = "ms-marco-MiniLM-L-12-v2"
 ANSWER_CONTENT_TYPES = ("concept", "activity")     # exercises are excluded from answers
-BM25_TOP_K = 15
-DENSE_TOP_K = 15
+# BM25_TOP_K = 15
+# DENSE_TOP_K = 15
 HYBRID_WEIGHTS = (0.5, 0.5)                        # (bm25, dense)
-RERANK_TOP_N = 5                                   # child chunks kept after re-ranking
-MAX_PARENTS = 3                                    # parent sections passed to the LLM
+RERANK_TOP_N = 8                                   # child chunks kept after re-ranking
+MAX_PARENTS = 5
+                                   # parent sections passed to the LLM
 
 # --- Generation (hosted LLM APIs) ---
 # Comma-separated, in priority order: the first is used, the others are fallbacks.
