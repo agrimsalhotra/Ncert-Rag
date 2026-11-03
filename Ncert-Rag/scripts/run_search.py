@@ -1,6 +1,9 @@
 import time
 
 from src.retrieval.search import NcertSearch
+from src.utils.logging_setup import configure_utf8_output
+
+configure_utf8_output()
 
 DEMO_QUESTIONS = [
     "What is a balanced chemical equation?",
@@ -20,6 +23,9 @@ def main():
         elapsed = time.perf_counter() - start
 
         print(f"\nQ: {question}   ({elapsed:.2f}s)")
+        if not results:
+            print("  No relevant results found.")
+            continue
         for parent, score in results:
             where = f"ch{parent.chapter_num} sec {parent.section_number or '-'}"
             preview = parent.text.replace("\n", " ")[:100]

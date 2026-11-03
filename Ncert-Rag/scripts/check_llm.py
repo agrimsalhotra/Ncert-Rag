@@ -1,4 +1,7 @@
 from src.generation.llm import KEY_NAMES, build_single_llm
+from src.utils.logging_setup import configure_utf8_output
+
+configure_utf8_output()
 
 
 def main():

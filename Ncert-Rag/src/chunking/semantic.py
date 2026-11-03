@@ -29,9 +29,13 @@ def split_semantic_sentences(
     Split text at coherent sentence and paragraph boundaries without breaking sentences mid-way.
     Groups consecutive sentences into semantic paragraph units up to target_chunk_chars.
     """
+    if not chapter.pages:
+        return []
+
     full_text = "\n\n".join(clean_page_text(page.markdown) for page in chapter.pages)
+    first_markdown = chapter.pages[0].markdown if chapter.pages else ""
     chapter_name = find_chapter_name(
-        chapter.pages[0].markdown,
+        first_markdown,
         class_num=chapter.class_num,
         chapter_num=chapter.chapter_num,
     )
@@ -65,8 +69,8 @@ def split_semantic_sentences(
                 )
                 chunk_counter += 1
 
-                # Retain overlap sentences
-                if overlap_sentences > 0:
+                # Retain overlap sentences only when advancing past the group
+                if overlap_sentences > 0 and len(current_sentences) > overlap_sentences:
                     current_sentences = current_sentences[-overlap_sentences:]
                     current_length = sum(len(s) + 1 for s in current_sentences)
                 else:

@@ -5,6 +5,13 @@ from config.settings import HYBRID_WEIGHTS
 
 def build_hybrid_retriever(bm25_retriever, dense_retriever):
     """Weighted Reciprocal Rank Fusion of BM25 and dense results."""
+    if bm25_retriever is None and dense_retriever is None:
+        return None
+    if bm25_retriever is None:
+        return dense_retriever
+    if dense_retriever is None:
+        return bm25_retriever
+
     return EnsembleRetriever(
         retrievers=[bm25_retriever, dense_retriever],
         weights=list(HYBRID_WEIGHTS),

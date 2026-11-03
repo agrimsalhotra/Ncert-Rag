@@ -27,12 +27,13 @@ pip install -r requirements.txt
 SCRIPTS
 ##############
 
-1. Ingestion:
+1. Ingestion (parses raw PDFs and exports chunks for all 6 strategies into data/chunks/<strategy>/):
    python -m scripts.run_ingestion
 
 2. Compare Chunking Strategies:
    python -m scripts.compare_chunking
    python -m scripts.compare_chunking --file class10_science_ch01.json
+   python -m scripts.compare_chunking --save
 
 3. Indexing:
    python -m scripts.run_indexing
@@ -42,13 +43,11 @@ SCRIPTS
    python -m scripts.run_query "What is a chemical reaction?"
 
 ##############
-CHUNKING STRATEGIES IMPLEMENTED (src/chunking/)
+CHUNKING STRATEGIES & DIRECTORIES (data/chunks/)
 ##############
-- Fixed Character Chunking (fixed.py): Strictly splits by character window with overlap.
-- Recursive Character Chunking (recursive.py): Multi-level delimiter splitting (paragraphs, lines, sentences).
-- Token-Based Chunking (token_based.py): BPE token-aware splitting (cl100k_base).
-- Sentence & Semantic Chunking (semantic.py): Natural sentence boundary extraction preserving semantic flow.
-- Markdown / Header Chunking (markdown.py): Splits along NCERT section headings (H1 to H5).
-- Hierarchical Chunking (hierarchical.py): Parent-child chunking for high-precision retrieval and context expansion.
-
-
+- Hierarchical Chunking (data/chunks/hierarchical/): Parent-child chunking for high-precision retrieval and context expansion.
+- Fixed Character Chunking (data/chunks/fixed/): Strictly splits by character window with overlap.
+- Recursive Character Chunking (data/chunks/recursive/): Multi-level delimiter splitting (paragraphs, lines, sentences).
+- Token-Based Chunking (data/chunks/token/): BPE token-aware splitting (cl100k_base).
+- Sentence & Semantic Chunking (data/chunks/semantic/): Natural sentence boundary extraction preserving semantic flow.
+- Markdown / Header Chunking (data/chunks/markdown/): Splits along NCERT section headings (H1 to H5).

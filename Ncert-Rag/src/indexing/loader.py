@@ -8,6 +8,9 @@ from src.chunking.schemas import ChildChunk, ParentChunk
 def load_children(path: Path) -> List[ChildChunk]:
     """Read a *_children.jsonl file. Pydantic validates every line."""
     children = []
+    if not path.exists():
+        return children
+
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip() == "":
@@ -20,6 +23,9 @@ def load_children(path: Path) -> List[ChildChunk]:
 def load_parents(path: Path) -> Dict[str, ParentChunk]:
     """Read a *_parents.jsonl file into a dictionary: parent_id -> ParentChunk."""
     parents = {}
+    if not path.exists():
+        return parents
+
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip() == "":
@@ -30,9 +36,12 @@ def load_parents(path: Path) -> Dict[str, ParentChunk]:
 
 
 def load_all_parents() -> Dict[str, ParentChunk]:
-    """Load the parents of every chapter (used again in Step 4)."""
+    """Load the parents of every chapter (searches CHUNKS_DIR and strategy subdirectories)."""
     all_parents = {}
-    for path in sorted(CHUNKS_DIR.glob("*_parents.jsonl")):
+    if not CHUNKS_DIR.exists():
+        return all_parents
+
+    for path in sorted(CHUNKS_DIR.rglob("*_parents.jsonl")):
         all_parents.update(load_parents(path))
     return all_parents
 

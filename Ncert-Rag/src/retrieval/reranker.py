@@ -11,6 +11,9 @@ def build_reranker():
 
 def rerank_documents(ranker, question, documents, top_n):
     """Return the best `top_n` documents as (document, score) pairs, best first."""
+    if not documents:
+        return []
+
     passages = []
     for index, document in enumerate(documents):
         passages.append({"id": index, "text": document.page_content})
@@ -20,6 +23,8 @@ def rerank_documents(ranker, question, documents, top_n):
 
     ranked = []
     for result in results[:top_n]:
-        document = documents[result["id"]]
-        ranked.append((document, float(result["score"])))
+        idx = result["id"]
+        if 0 <= idx < len(documents):
+            document = documents[idx]
+            ranked.append((document, float(result["score"])))
     return ranked

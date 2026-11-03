@@ -18,7 +18,7 @@ SERVICE_ERROR_MESSAGE = (
     "The answer service is temporarily unavailable. Please try again in a moment."
 )
 CITATION_PATTERN = re.compile(
-    r"[\[【]\s*(?:excerpts?|sources?|passages?)?\s*([\d,\s]+)[\]】]", re.IGNORECASE
+    r"[\[【]\s*(?:excerpts?|sources?|passages?)?\s*([\d,\s\-–;]+)[\]】]", re.IGNORECASE
 )
 
 
@@ -42,11 +42,21 @@ def keep_relevant_passages(results: List[Tuple[ParentChunk, float]]):
 
 
 def extract_citation_numbers(answer_text: str, max_number: int) -> List[int]:
-    """Find valid citation numbers such as [1], [2][3] or [1, 2], without duplicates."""
+    """Find valid citation numbers such as [1], [2][3], [1, 2], or [1-3], without duplicates."""
     numbers = []
     for group in CITATION_PATTERN.findall(answer_text):
-        for piece in group.split(","):
+        for piece in re.split(r"[,;]|\s+and\s+", group):
             piece = piece.strip()
+            if not piece:
+                continue
+            # Handle ranges like 1-3 or 1–3
+            range_match = re.match(r"^(\d+)\s*[-–]\s*(\d+)$", piece)
+            if range_match:
+                start_n, end_n = int(range_match.group(1)), int(range_match.group(2))
+                for n in range(start_n, min(end_n, max_number) + 1):
+                    if 1 <= n <= max_number and n not in numbers:
+                        numbers.append(n)
+                continue
             if not piece.isdigit():
                 continue
             number = int(piece)

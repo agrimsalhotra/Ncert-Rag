@@ -24,7 +24,8 @@ def build_single_llm(provider):
         raise ValueError(f"Unknown provider {provider!r}. Use: groq, gemini, openrouter")
 
     key_name = KEY_NAMES[provider]
-    if not os.getenv(key_name):
+    api_key = os.getenv(key_name)
+    if not api_key:
         raise ValueError(f"{key_name} is missing. Add it to your .env file.")
 
     if provider == "groq":
@@ -32,6 +33,7 @@ def build_single_llm(provider):
 
         return ChatGroq(
             model=GROQ_MODEL,
+            api_key=api_key,
             temperature=LLM_TEMPERATURE,
             max_retries=LLM_MAX_RETRIES,
         )
@@ -41,6 +43,7 @@ def build_single_llm(provider):
 
         return ChatGoogleGenerativeAI(
             model=GEMINI_MODEL,
+            google_api_key=api_key,
             temperature=LLM_TEMPERATURE,
             max_retries=LLM_MAX_RETRIES,
         )
@@ -51,18 +54,31 @@ def build_single_llm(provider):
     return ChatOpenAI(
         model=OPENROUTER_MODEL,
         base_url=OPENROUTER_BASE_URL,
-        api_key=os.getenv("OPENROUTER_API_KEY"),
+        api_key=api_key,
         temperature=LLM_TEMPERATURE,
         max_retries=LLM_MAX_RETRIES,
     )
 
 
 def build_llm():
-    """First provider in LLM_PROVIDERS is primary. The rest are used if it fails."""
+    """First available provider in LLM_PROVIDERS is primary. Others with valid keys are used as fallbacks."""
     if len(LLM_PROVIDERS) == 0:
         raise ValueError("LLM_PROVIDERS is empty. Set it in your .env file.")
 
-    models = [build_single_llm(provider) for provider in LLM_PROVIDERS]
+    models = []
+    missing_errors = []
+    for provider in LLM_PROVIDERS:
+        try:
+            models.append(build_single_llm(provider))
+        except ValueError as error:
+            missing_errors.append(f"{provider}: {error}")
+
+    if not models:
+        raise ValueError(
+            "None of the configured LLM_PROVIDERS have valid API keys set. Errors:\n"
+            + "\n".join(missing_errors)
+        )
+
     primary = models[0]
     fallbacks = models[1:]
 

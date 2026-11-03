@@ -8,7 +8,7 @@ from src.chunking.headings import (
 from src.parsing.schemas import ParsedChapter
 
 
-def build_metadata(headers, chapter: ParsedChapter, chapter_name):
+def build_metadata(headers, chapter: ParsedChapter, chapter_name: str):
     """Build the metadata dict for one section.
 
     `headers` comes from MarkdownHeaderTextSplitter, e.g.
@@ -48,13 +48,15 @@ def build_metadata(headers, chapter: ParsedChapter, chapter_name):
     else:
         content_type = "concept"
 
-    # These two blocks are not part of any numbered section
+    # These blocks are not part of any numbered section
     if is_end_exercises:
         section_number = ""
         section_title = "Exercises"
     if is_summary:
         section_number = ""
         section_title = "What you have learnt"
+    if is_questions_box and not section_title:
+        section_title = "Questions"
 
     return {
         "class_num": chapter.class_num,

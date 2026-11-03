@@ -13,9 +13,13 @@ def split_recursive(
     chunk_overlap: int = 100,
 ) -> List[Chunk]:
     """Split chapter text recursively using natural text boundaries (paragraphs, lines, sentences)."""
+    if not chapter.pages:
+        return []
+
     full_text = "\n\n".join(clean_page_text(page.markdown) for page in chapter.pages)
+    first_markdown = chapter.pages[0].markdown if chapter.pages else ""
     chapter_name = find_chapter_name(
-        chapter.pages[0].markdown,
+        first_markdown,
         class_num=chapter.class_num,
         chapter_num=chapter.chapter_num,
     )

@@ -3,6 +3,7 @@ CLI tool to test and compare different chunking strategies on any parsed NCERT c
 Usage:
     python -m scripts.compare_chunking
     python -m scripts.compare_chunking --file class10_science_ch01.json
+    python -m scripts.compare_chunking --save
 """
 
 import argparse
@@ -10,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
-from config.settings import PARSED_DIR
+from config.settings import CHUNKS_DIR, PARSED_DIR
 from src.parsing.schemas import ParsedChapter
 from src.chunking import (
     split_fixed_size,
@@ -20,6 +21,25 @@ from src.chunking import (
     split_markdown_sections,
     split_hierarchical,
 )
+from src.utils.logging_setup import configure_utf8_output
+
+configure_utf8_output()
+
+STRATEGY_DIRS = {
+    "hierarchical": CHUNKS_DIR / "hierarchical",
+    "fixed": CHUNKS_DIR / "fixed",
+    "recursive": CHUNKS_DIR / "recursive",
+    "token": CHUNKS_DIR / "token",
+    "semantic": CHUNKS_DIR / "semantic",
+    "markdown": CHUNKS_DIR / "markdown",
+}
+
+
+def write_jsonl(path: Path, items):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for item in items:
+            f.write(item.model_dump_json() + "\n")
 
 
 def analyze_chunks(name: str, chunks) -> Dict[str, Any]:
@@ -44,19 +64,28 @@ def main():
         default=None,
         help="Specific parsed json file in data/parsed (e.g. class10_science_ch01.json)",
     )
+    parser.add_argument(
+        "--save",
+        action="store_true",
+        default=False,
+        help="Save generated chunks from all strategies into strategy-specific folders in data/chunks/",
+    )
     args = parser.parse_args()
 
-    parsed_files = sorted(PARSED_DIR.glob("*.json"))
-    if not parsed_files:
-        print(f"No parsed chapters found in {PARSED_DIR}. Run run_ingestion first.")
-        return
-
     if args.file:
-        target_path = PARSED_DIR / args.file
+        candidate = Path(args.file)
+        if candidate.exists():
+            target_path = candidate
+        else:
+            target_path = PARSED_DIR / args.file
         if not target_path.exists():
             print(f"File {target_path} not found.")
             return
     else:
+        parsed_files = sorted(PARSED_DIR.glob("*.json")) if PARSED_DIR.exists() else []
+        if not parsed_files:
+            print(f"No parsed chapters found in {PARSED_DIR}. Run run_ingestion first.")
+            return
         target_path = parsed_files[0]
 
     print(f"Loading {target_path.name}...")
@@ -72,6 +101,19 @@ def main():
     sem_chunks = split_semantic_sentences(chapter, target_chunk_chars=800)
     md_chunks = split_markdown_sections(chapter, max_chunk_size=1200)
     parents, children = split_hierarchical(chapter)
+
+    stem = target_path.stem
+    if args.save:
+        for dir_path in STRATEGY_DIRS.values():
+            dir_path.mkdir(parents=True, exist_ok=True)
+        write_jsonl(STRATEGY_DIRS["hierarchical"] / f"{stem}_parents.jsonl", parents)
+        write_jsonl(STRATEGY_DIRS["hierarchical"] / f"{stem}_children.jsonl", children)
+        write_jsonl(STRATEGY_DIRS["fixed"] / f"{stem}_fixed.jsonl", fixed_chunks)
+        write_jsonl(STRATEGY_DIRS["recursive"] / f"{stem}_recursive.jsonl", rec_chunks)
+        write_jsonl(STRATEGY_DIRS["token"] / f"{stem}_token.jsonl", tok_chunks)
+        write_jsonl(STRATEGY_DIRS["semantic"] / f"{stem}_semantic.jsonl", sem_chunks)
+        write_jsonl(STRATEGY_DIRS["markdown"] / f"{stem}_markdown.jsonl", md_chunks)
+        print(f"Saved chunks for all 6 strategies to {CHUNKS_DIR}/<strategy>/")
 
     results = [
         analyze_chunks("Fixed Character (500 chars)", fixed_chunks),

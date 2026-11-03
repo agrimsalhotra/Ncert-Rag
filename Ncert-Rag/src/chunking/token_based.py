@@ -12,9 +12,13 @@ def split_token_based(
     encoding_name: str = "cl100k_base",
 ) -> List[Chunk]:
     """Split chapter text based on BPE token counts (e.g., tiktoken cl100k_base)."""
+    if not chapter.pages:
+        return []
+
     full_text = "\n\n".join(clean_page_text(page.markdown) for page in chapter.pages)
+    first_markdown = chapter.pages[0].markdown if chapter.pages else ""
     chapter_name = find_chapter_name(
-        chapter.pages[0].markdown,
+        first_markdown,
         class_num=chapter.class_num,
         chapter_num=chapter.chapter_num,
     )

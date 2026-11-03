@@ -1,7 +1,7 @@
 import re
 
 # "1.2 Title" or "1.2.3 Title" (needs at least one dot, so "1. A solution..." is NOT matched)
-NUMBERED_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)\s+(.+)$")
+NUMBERED_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)(?:\s+(.+))?$")
 ACTIVITY_PATTERN = re.compile(
     r"^(Activity\s+\d+\.\d+|Carry out the following Activity)", re.IGNORECASE
 )
@@ -142,7 +142,7 @@ def parse_numbered_heading(text):
     match = NUMBERED_PATTERN.match(text)
     if match is None:
         return None
-    return match.group(1), match.group(2)
+    return match.group(1), (match.group(2) or "").strip()
 
 
 def is_activity_heading(text):
@@ -151,7 +151,7 @@ def is_activity_heading(text):
 
 # def is_exercise_heading(text):
 #     # "E X E R C I S E S" -> "EXERCISES"  (end-of-chapter exercises)
-#     squashed = text.replace(" ", "").upper()
+#     squashed = "".join(text.split()).upper()
     
 #     return squashed.startswith("EXERCISE")
 def is_exercise_heading(text):
@@ -170,7 +170,7 @@ def is_exercise_heading(text):
 
 def is_questions_heading(text):
     # "Q U E S T I O N S" -> "QUESTIONS"  (in-text question boxes)
-    squashed = text.replace(" ", "").upper()
+    squashed = "".join(text.split()).upper()
     return squashed.startswith("QUESTION")
 
 
@@ -280,11 +280,23 @@ def normalize_headings(markdown_text):
 #     title = title.replace("#", "").replace("*", "")
 #     title = " ".join(title.split())
 #     return title
-def find_chapter_name(first_page_markdown: str, class_num: int = None, chapter_num: int = None) -> str:
+def find_chapter_name(first_page_markdown: str = "", class_num: int = None, chapter_num: int = None) -> str:
     """Read the chapter title using catalog lookup, regex, or page-1 header heuristics."""
     # 1. Exact catalog match if class and chapter numbers are provided
-    if class_num in NCERT_SCIENCE_CHAPTERS and chapter_num in NCERT_SCIENCE_CHAPTERS[class_num]:
-        return NCERT_SCIENCE_CHAPTERS[class_num][chapter_num]
+
+    try:
+        if class_num is not None and chapter_num is not None:
+            c_num = int(class_num)
+            ch_num = int(chapter_num)
+            if c_num in NCERT_SCIENCE_CHAPTERS and ch_num in NCERT_SCIENCE_CHAPTERS[c_num]:
+                return NCERT_SCIENCE_CHAPTERS[c_num][ch_num]
+    except (ValueError, TypeError):
+        pass
+
+    if not first_page_markdown:
+        return "Unknown"
+
+
 
     # 2. Try regex extraction from the first page text
     for pattern in CHAPTER_TITLE_PATTERNS:
@@ -306,3 +318,9 @@ def find_chapter_name(first_page_markdown: str, class_num: int = None, chapter_n
                 return cleaned
 
     return "Unknown"
+def has_body_text(text):
+    """True if the text has at least one non-heading, non-blank line."""
+    for line in text.split("\n"):
+        if line.strip() != "" and not line.startswith("#"):
+            return True
+    return False

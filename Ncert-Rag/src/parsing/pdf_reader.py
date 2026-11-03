@@ -1,14 +1,16 @@
 import re
 from pathlib import Path
 
-import pymupdf as fitz  # Fixes the 'fitz' deprecation warning
+import pymupdf as fitz
 import pymupdf4llm
-from pymupdf4llm.helpers.pymupdf_rag import IdentifyHeaders  # Fixes the ImportError
+from pymupdf4llm.helpers.pymupdf_rag import IdentifyHeaders
 
 from src.parsing.schemas import ParsedChapter, ParsedPage
 
-# Matches names like class8_science_ch03.pdf
-FILENAME_PATTERN = re.compile(r"class(\d+)_([a-z]+)_ch(\d+)\.pdf", re.IGNORECASE)
+# Matches names like class8_science_ch03.pdf or class_8_science_ch_3.pdf
+FILENAME_PATTERN = re.compile(
+    r"class[_-]?(\d+)[_-]([a-zA-Z]+)[_-]ch[_-]?(\d+)\.pdf", re.IGNORECASE
+)
 
 
 def read_filename_info(pdf_path: Path):
@@ -48,9 +50,9 @@ def parse_chapter_pdf(pdf_path: Path) -> ParsedChapter:
     for index, page_dict in enumerate(page_dicts):
         page = ParsedPage(
             page_number=index + 1,
-            markdown=page_dict["text"],
-            table_count=len(page_dict.get("tables", [])),
-            image_count=len(page_dict.get("images", [])),
+            markdown=page_dict.get("text", "") or "",
+            table_count=len(page_dict.get("tables", []) or []),
+            image_count=len(page_dict.get("images", []) or []),
         )
         pages.append(page)
 

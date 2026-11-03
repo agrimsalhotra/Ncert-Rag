@@ -4,6 +4,9 @@ from config.settings import CHUNKS_DIR
 from src.indexing.embedder import build_embedder
 from src.indexing.loader import load_all_parents, load_children, validate_children
 from src.indexing.vector_store import delete_chapter, get_collection, index_chapter
+from src.utils.logging_setup import configure_utf8_output
+
+configure_utf8_output()
 
 # (question, where the answer should come from)
 SMOKE_TEST_QUERIES = [
@@ -18,13 +21,17 @@ def main():
     collection = get_collection()
     parents = load_all_parents()
 
-    children_files = sorted(CHUNKS_DIR.glob("*_children.jsonl"))
+    children_files = sorted(CHUNKS_DIR.rglob("*_children.jsonl"))
     if len(children_files) == 0:
-        print(f"No chunk files in {CHUNKS_DIR}. Run scripts.run_ingestion first.")
+        print(f"No chunk files found in {CHUNKS_DIR}. Run scripts.run_ingestion first.")
         return
 
     for path in children_files:
         children = load_children(path)
+        if not children:
+            print(f"Skipping empty chunk file: {path.name}")
+            continue
+
         validate_children(children, parents)
 
         first = children[0]
@@ -34,7 +41,8 @@ def main():
 
     # --- Summary ---
     stored = collection.get(include=["metadatas"])
-    type_counts = Counter(m["content_type"] for m in stored["metadatas"])
+    metadatas = stored.get("metadatas") or []
+    type_counts = Counter(m["content_type"] for m in metadatas if "content_type" in m)
     print(f"\nCollection now holds {collection.count()} vectors: {dict(type_counts)}")
 
     # --- Smoke test: only search concept and activity chunks ---
@@ -49,6 +57,11 @@ def main():
         )
         print(f"\nQ: {question}")
         print(f"   expected: {expected}")
+        docs = results.get("documents") or []
+        if not docs or not docs[0]:
+            print("   No matching chunks found.")
+            continue
+
         for text, meta, distance in zip(
             results["documents"][0], results["metadatas"][0], results["distances"][0]
         ):

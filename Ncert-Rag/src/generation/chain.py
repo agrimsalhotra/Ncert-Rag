@@ -88,22 +88,26 @@ class NcertRag:
         )
 
     def ask(self, question: str, class_num=None) -> RagAnswer:
-        # In src/generation/chain.py inside NcertRag.ask():
+        # Gate 1: is there anything relevant at all?
         results = self.searcher.search(question, class_num=class_num)
         passed, reason = check_retrieval(results)
         if not passed:
-            return self._refuse(question, REFUSAL_MESSAGE, reason)
+            return self._refuse(
+                question,
+                REFUSAL_MESSAGE,
+                reason,
+                retrieved_parents=[p for p, _ in results],
+            )
 
         passages = keep_relevant_passages(results)
         if not passages:
-            return self._refuse(question, REFUSAL_MESSAGE, "no_passages_above_min_score")
-        # Gate 1: is there anything relevant at all?
-        # results = self.searcher.search(question, class_num=class_num)
-        # passed, reason = check_retrieval(results)
-        # if not passed:
-        #     return self._refuse(question, REFUSAL_MESSAGE, reason)
+            return self._refuse(
+                question,
+                REFUSAL_MESSAGE,
+                "no_passages_above_min_score",
+                retrieved_parents=[p for p, _ in results],
+            )
 
-        passages = keep_relevant_passages(results)
         retrieved = [parent for parent, score in passages]
         context = build_context(passages)
 

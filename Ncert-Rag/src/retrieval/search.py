@@ -25,7 +25,7 @@ class NcertSearch:
         where_filter = build_where_filter(content_types, class_num)
 
         # BM25 is built once per filter combination, then reused
-        cache_key = (tuple(content_types), class_num)
+        cache_key = (tuple(content_types) if content_types else (), class_num)
         if cache_key not in self._bm25_cache:
             documents = load_documents(self.vectorstore, where_filter)
             self._bm25_cache[cache_key] = build_bm25_retriever(documents)
@@ -33,6 +33,8 @@ class NcertSearch:
 
         dense_retriever = build_dense_retriever(self.vectorstore, where_filter)
         hybrid_retriever = build_hybrid_retriever(bm25_retriever, dense_retriever)
+        if hybrid_retriever is None:
+            return []
         return hybrid_retriever.invoke(question)
 
     def search(self, question, class_num=None, content_types=ANSWER_CONTENT_TYPES):
@@ -46,11 +48,14 @@ class NcertSearch:
         results = []
         seen_parent_ids = set()
         for child, score in ranked_children:
-            parent_id = child.metadata["parent_id"]
-            if parent_id in seen_parent_ids:
+            parent_id = child.metadata.get("parent_id")
+            if not parent_id or parent_id in seen_parent_ids:
                 continue   # several top children can share one parent
+            parent = self.parents.get(parent_id)
+            if parent is None:
+                continue
             seen_parent_ids.add(parent_id)
-            results.append((self.parents[parent_id], score))
+            results.append((parent, score))
             if len(results) == MAX_PARENTS:
                 break
         return results

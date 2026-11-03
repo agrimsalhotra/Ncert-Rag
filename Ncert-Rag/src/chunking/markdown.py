@@ -21,10 +21,14 @@ def split_markdown_sections(
     chunk_overlap: int = 150,
 ) -> List[Chunk]:
     """Split chapter text based on Markdown headers, preserving section structure and headings."""
+    if not chapter.pages:
+        return []
+
     full_text = "\n\n".join(clean_page_text(page.markdown) for page in chapter.pages)
     normalized_text = normalize_headings(full_text)
+    first_markdown = chapter.pages[0].markdown if chapter.pages else ""
     chapter_name = find_chapter_name(
-        chapter.pages[0].markdown,
+        first_markdown,
         class_num=chapter.class_num,
         chapter_num=chapter.chapter_num,
     )
@@ -50,6 +54,8 @@ def split_markdown_sections(
 
         meta = build_metadata(doc.metadata, chapter, chapter_name)
         sub_texts = recursive_subsplitter.split_text(doc.page_content)
+        if not sub_texts and doc.page_content.strip():
+            sub_texts = [doc.page_content.strip()]
 
         for text in sub_texts:
             text_clean = text.strip()
